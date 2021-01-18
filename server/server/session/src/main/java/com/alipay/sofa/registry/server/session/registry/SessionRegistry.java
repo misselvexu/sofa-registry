@@ -16,11 +16,7 @@
  */
 package com.alipay.sofa.registry.server.session.registry;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -55,8 +51,6 @@ import com.alipay.sofa.registry.server.session.wrapper.WrapperInterceptorManager
 import com.alipay.sofa.registry.server.session.wrapper.WrapperInvocation;
 import com.alipay.sofa.registry.task.listener.TaskEvent;
 import com.alipay.sofa.registry.task.listener.TaskListenerManager;
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 
 /**
  * @author shangyu.wh
@@ -418,13 +412,18 @@ public class SessionRegistry implements Registry {
 
     public void cleanClientConnect() {
 
-        SetView<String> intersection = Sets.union(sessionDataStore.getConnectPublishers().keySet(),
-            sessionInterests.getConnectSubscribers().keySet());
+        Set<String> connectIndexes = new HashSet<>();
+        Set<String> pubIndexes = sessionDataStore.getConnectPublishers().keySet();
+        Set<String> subIndexes = sessionInterests.getConnectSubscribers().keySet();
+        Set<String> watchIndexes = sessionWatchers.getConnectWatchers().keySet();
+        connectIndexes.addAll(pubIndexes);
+        connectIndexes.addAll(subIndexes);
+        connectIndexes.addAll(watchIndexes);
 
         Server sessionServer = boltExchange.getServer(sessionServerConfig.getServerPort());
 
         List<String> connectIds = new ArrayList<>();
-        for (String connectId : intersection) {
+        for (String connectId : connectIndexes) {
             String[] parts = connectId.split(ValueConstants.CONNECT_ID_SPLIT);
             Channel channel = sessionServer.getChannel(URL.valueOf(parts[0]));
             if (channel == null) {
